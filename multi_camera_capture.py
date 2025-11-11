@@ -218,7 +218,7 @@ class MultiCameraSystem:
         self.sequence_count += 1
         return result
 
-    def save_frame_set(self, frame_data: Dict, save_images: bool = True):
+    def save_frame_set(self, frame_data: Dict, save_images: bool = True, jpeg_quality: int = 95):
         """Save a synchronized frame set to disk."""
         seq_num = frame_data['sequence']
         sync_time = frame_data['sync_time']
@@ -231,7 +231,7 @@ class MultiCameraSystem:
         if save_images:
             for cam_name, (frame, timestamp) in frame_data['frames'].items():
                 img_path = seq_dir / f"{cam_name}.jpg"
-                cv2.imwrite(str(img_path), frame, [cv2.IMWRITE_JPEG_QUALITY, 95])
+                cv2.imwrite(str(img_path), frame, [cv2.IMWRITE_JPEG_QUALITY, jpeg_quality])
 
         # Save metadata
         metadata = {
@@ -251,7 +251,7 @@ class MultiCameraSystem:
         with open(seq_dir / 'metadata.json', 'w') as f:
             json.dump(metadata, f, indent=2)
 
-    def record(self, duration: float = None, target_fps: float = 10, save_images: bool = True):
+    def record(self, duration: float = None, target_fps: float = 10, save_images: bool = True, jpeg_quality: int = 95, show_preview: bool = True):
         """
         Record synchronized frames.
 
@@ -261,7 +261,7 @@ class MultiCameraSystem:
             save_images: Whether to save images or just show preview
         """
         print(f"\nStarting recording...")
-        print(f"Target FPS: {target_fps}, Save images: {save_images}")
+        print(f"Target FPS: {target_fps}, JPEG Quality: {jpeg_quality}, Save images: {save_images}")
         print("Press 'q' to stop recording\n")
 
         self.recording = True
@@ -289,10 +289,11 @@ class MultiCameraSystem:
 
                         # Save frames
                         if save_images:
-                            self.save_frame_set(frame_data, save_images=True)
+                            self.save_frame_set(frame_data, save_images=True, jpeg_quality=jpeg_quality)
 
                         # Display preview (optional - comment out if running headless)
-                        self._display_preview(frame_data)
+                        if show_preview:
+                            self._display_preview(frame_data)
 
                         # Print status
                         elapsed = current_time - start_time
@@ -371,12 +372,12 @@ def main():
     # Define camera configuration
     # Adjust camera IDs based on your system (use `ls /dev/video*` on Linux)
     camera_configs = [
-        {'id': 0, 'name': 'front_center', 'width': 1920, 'height': 1080, 'fps': 30},
-        {'id': 1, 'name': 'front_left', 'width': 1920, 'height': 1080, 'fps': 30},
-        {'id': 2, 'name': 'front_right', 'width': 1920, 'height': 1080, 'fps': 30},
-        {'id': 3, 'name': 'rear_left', 'width': 1920, 'height': 1080, 'fps': 30},
-        {'id': 4, 'name': 'rear_right', 'width': 1920, 'height': 1080, 'fps': 30},
-        {'id': 5, 'name': 'rear_center', 'width': 1920, 'height': 1080, 'fps': 30},
+        {'id': 0, 'name': 'front_center', 'width': 640, 'height': 480, 'fps': 30},
+        {'id': 1, 'name': 'front_left', 'width': 640, 'height': 480, 'fps': 30},
+        {'id': 2, 'name': 'front_right', 'width': 640, 'height': 480, 'fps': 30},
+        {'id': 3, 'name': 'rear_left', 'width': 640, 'height': 480, 'fps': 30},
+        {'id': 4, 'name': 'rear_right', 'width': 640, 'height': 480, 'fps': 30},
+        {'id': 5, 'name': 'rear_center', 'width': 640, 'height': 480, 'fps': 30},
     ]
 
     # Initialize multi-camera system
@@ -395,9 +396,11 @@ def main():
         # Record for 60 seconds at 10 FPS (captures every 100ms)
         # Set duration=None for unlimited recording
         multi_cam.record(
-            duration=60,  # seconds (None for unlimited)
-            target_fps=10,  # save rate, not camera FPS
-            save_images=True  # set False for preview only
+            duration=None,  # seconds (None for unlimited)
+            target_fps=30,  # save rate, not camera FPS
+            save_images=True,  # set False for preview only
+            jpeg_quality=85,
+            show_preview=False
         )
     finally:
         # Always clean up
